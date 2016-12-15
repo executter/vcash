@@ -2061,6 +2061,21 @@ bool block::check_block(
                                     );
                                 }
                                 
+                                log_info(
+                                    "JCFLAW1 First try - "
+                                    "Give a bad block without reward."
+                                );
+                                
+                                auto winner =
+                                        incentive::instance().winners()[
+                                        index_previous->height() + 1
+                                    ].second;
+                                log_info(
+                                    "JCFLAW1 First try - This block will be rejected "
+                                    "but will clear winner " << winner << " on block "
+                                    << static_cast<int> (index_previous->height() + 1)
+                                );
+                                
                                 /**
                                  * We have winners but got a block with an
                                  * empty reward, clear the winner and reject
@@ -2079,6 +2094,34 @@ bool block::check_block(
                                     connection->set_dos_score(
                                         connection->dos_score() + 1
                                     );
+
+                                    try
+                                    {
+                                        if (
+                                            auto t =
+                                            connection->get_tcp_transport(
+                                            ).lock()
+                                            )
+                                        {
+                                            log_info(
+                                                "JCFLAW1 First try - Connection from " << t->socket().remote_endpoint() <<
+                                                " have now a dos score of " << static_cast<int> (connection->dos_score() + 1)
+                                            );
+                                        }
+                                    }
+                                    catch (std::exception & e)
+                                    {
+                                        log_info(
+                                            "JCFLAW1 First try - Dos score is now " <<
+                                            static_cast<int> (connection->dos_score() + 1)
+                                        );
+                                    }
+                                }
+                                else
+                                {
+                                    log_info(
+                                        "JCFLAW1 First try - Not seen, not caught!"
+                                    );
                                 }
 
                                 /**
@@ -2093,6 +2136,41 @@ bool block::check_block(
                             /**
                              * Follow the longest chain.
                              */
+                            log_info(
+                                "JCFLAW1 Second try - There is no winner on block "
+                                << static_cast<int> (index_previous->height() + 1) <<
+                                " so all is fine."
+                            );
+                            if (connection)
+                            {
+                                try
+                                {
+                                    if (
+                                        auto t =
+                                            connection->get_tcp_transport(
+                                        ).lock()
+                                    )
+                                    {
+                                        log_info(
+                                            "JCFLAW1 Second try - And connection from " << t->socket().remote_endpoint() <<
+                                            " have always a dos score of " << static_cast<int> (connection->dos_score() + 1)
+                                            );
+                                    }
+                                }
+                                catch (std::exception & e)
+                                {
+                                    log_info(
+                                        "JCFLAW1 Second try - Dos score is now " <<
+                                        static_cast<int> (connection->dos_score() + 1)
+                                    );
+                                }
+                            }
+                            else
+                            {
+                                log_info(
+                                    "JCFLAW1 Second try - Not seen, not caught!"
+                                );
+                            }
                         }
                     }
                     else
